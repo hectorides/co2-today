@@ -82,8 +82,6 @@
   </div>
 
   <script>
-    // Minimal JS inlined to keep things simple while we debug
-
     const NOAA_URL =
       "https://gml.noaa.gov/webdata/ccgg/trends/co2/co2_daily_mlo.txt";
     const DATA_URL =
