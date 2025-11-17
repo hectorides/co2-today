@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mauna Loa CO₂ Today</title>
+  <style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+        sans-serif;
+      background: #020617;
+      color: #e5e7eb;
+    }
+    .card {
+      padding: 20px 24px;
+      border-radius: 16px;
+      background: #020617;
+      border: 1px solid #1f2937;
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.5);
+      max-width: 420px;
+      width: 90vw;
+    }
+    h1 {
+      margin: 0 0 4px;
+      font-size: 1.1rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #9ca3af;
+    }
+    .subtitle {
+      margin-bottom: 20px;
+      font-size: 0.9rem;
+      color: #6b7280;
+    }
+    .value-row {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+    #co2-value {
+      font-size: 3rem;
+      font-weight: 600;
+      color: #22d3ee;
+    }
+    .unit {
+      font-size: 1rem;
+      color: #9ca3af;
+    }
+    #date-label {
+      font-size: 0.85rem;
+      color: #9ca3af;
+      margin-bottom: 8px;
+    }
+    #status {
+      font-size: 0.8rem;
+      color: #9ca3af;
+      margin-top: 8px;
+    }
+    .error {
+      color: #fca5a5;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Atmospheric CO₂</h1>
+    <div class="subtitle">Mauna Loa Observatory · Daily mean</div>
+
+    <div class="value-row">
+      <div id="co2-value">—</div>
+      <div class="unit">ppm</div>
+    </div>
+
+    <div id="date-label">Latest date: —</div>
+    <div id="status">Fetching latest value…</div>
+  </div>
+
+  <script>
+    const NOAA_URL =
+      "https://gml.noaa.gov/webdata/ccgg/trends/co2/co2_daily_mlo.txt";
+    const DATA_URL =
+      "https://api.allorigins.win/raw?url=" + encodeURIComponent(NOAA_URL);
+
+    const valueEl = document.getElementById("co2-value");
+    const dateLabelEl = document.getElementById("date-label");
+    const statusEl = document.getElementById("status");
+
+    async function fetchCO2() {
+      try {
+        statusEl.textContent = "Fetching latest value…";
+
+        const resp = await fetch(DATA_URL, { cache: "no-cache" });
+        if (!resp.ok) {
+          throw new Error("HTTP " + resp.status);
+        }
+
+        const text = await resp.text();
+        const lines = text.trim().split("\n");
+
+        let co2 = null;
+        let year, month, day;
+
+        // Walk from the bottom up to find the latest valid data line
+        for (let i = lines.length - 1; i >= 0; i--) {
+          const line = lines[i].trim();
+          if (!line || line.startsWith("#")) continue;
+
+          const parts = line.split(/\s+/);
+          if (parts.length < 5) continue;
+
+          year = parts[0];
+          month = parts[1];
+          day = parts[2];
+
+          const value = parseFloat(parts[4]); // daily mean ppm
+
+          if (!Number.isFinite(value) || value < 200 || value > 700) continue;
+          co2 = value;
+          break;
+        }
+
+        if (co2 === null) {
+          throw new Error("Could not find a valid CO₂ value in the file");
+        }
+
+        valueEl.textContent = co2.toFixed(2);
+        const mm = String(month).padStart(2, "0");
+        const dd = String(day).padStart(2, "0");
+        dateLabelEl.textContent = `Latest date: ${year}-${mm}-${dd}`;
+
+        const updated = new Date().toLocaleString();
+        statusEl.textContent = `Last updated from NOAA (via proxy): ${updated}`;
+      } catch (err) {
+        console.error(err);
+        statusEl.innerHTML =
+          '<span class="error">Error fetching CO₂ data. Please try again later.</span>';
+      }
+    }
+
+    fetchCO2();
+  </script>
+</body>
+</html>
