@@ -80,12 +80,13 @@
     <div id="date-label">Latest date: —</div>
     <div id="status">Fetching latest value…</div>
   </div>
-
   <script>
     const NOAA_URL =
       "https://gml.noaa.gov/webdata/ccgg/trends/co2/co2_daily_mlo.txt";
+
+    // Use AllOrigins JSON endpoint instead of /raw to avoid issues
     const DATA_URL =
-      "https://api.allorigins.win/raw?url=" + encodeURIComponent(NOAA_URL);
+      "https://api.allorigins.win/get?url=" + encodeURIComponent(NOAA_URL);
 
     const valueEl = document.getElementById("co2-value");
     const dateLabelEl = document.getElementById("date-label");
@@ -100,7 +101,9 @@
           throw new Error("HTTP " + resp.status);
         }
 
-        const text = await resp.text();
+        // AllOrigins /get returns JSON with a `contents` field
+        const json = await resp.json();
+        const text = json.contents;
         const lines = text.trim().split("\n");
 
         let co2 = null;
@@ -120,6 +123,7 @@
 
           const value = parseFloat(parts[4]); // daily mean ppm
 
+          // Skip missing/invalid values
           if (!Number.isFinite(value) || value < 200 || value > 700) continue;
           co2 = value;
           break;
@@ -129,6 +133,7 @@
           throw new Error("Could not find a valid CO₂ value in the file");
         }
 
+        // Update display
         valueEl.textContent = co2.toFixed(2);
         const mm = String(month).padStart(2, "0");
         const dd = String(day).padStart(2, "0");
@@ -145,5 +150,6 @@
 
     fetchCO2();
   </script>
+  
 </body>
 </html>
