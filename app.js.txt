@@ -1,0 +1,60 @@
+const DATA_URL =
+  "https://gml.noaa.gov/webdata/ccgg/trends/co2/co2_daily_mlo.txt";
+
+const valueEl = document.getElementById("co2-value");
+const dateEl = document.getElementById("date-label").querySelector("strong");
+const statusEl = document.getElementById("status");
+
+async function fetchCO2() {
+  try {
+    statusEl.textContent = "Fetching latest value…";
+
+    const resp = await fetch(DATA_URL, {
+      cache: "no-cache",
+    });
+
+    if (!resp.ok) {
+      throw new Error(`HTTP ${resp.status}`);
+    }
+
+    const text = await resp.text();
+    const lines = text.trim().split("\n");
+
+    // Last non-empty line should be latest data
+    let lastLine = lines[lines.length - 1].trim();
+    // Sometimes there can be a trailing comment, so guard:
+    while (lastLine.startsWith("#") || lastLine === "") {
+      lines.pop();
+      lastLine = lines[lines.length - 1].trim();
+    }
+
+    const parts = lastLine.split(/\s+/);
+
+    // NOAA daily file format: year, month, day, decimal_year, value, ...
+    const year = parts[0];
+    const month = parts[1];
+    const day = parts[2];
+    const co2 = parseFloat(parts[4]); // daily mean ppm
+
+    if (Number.isNaN(co2)) {
+      throw new Error("Could not parse CO₂ value");
+    }
+
+    // Update display
+    valueEl.textContent = co2.toFixed(2);
+    dateEl.textContent = `${year}-${month.padStart(2, "0")}-${day.padStart(
+      2,
+      "0"
+    )}`;
+
+    const updated = new Date().toLocaleString();
+    statusEl.textContent = `Last updated from NOAA: ${updated}`;
+  } catch (err) {
+    console.error(err);
+    statusEl.innerHTML =
+      '<span class="error">Error fetching CO₂ data. Check connection and try again.</span>';
+  }
+}
+
+// Run once on load
+fetchCO2();
