@@ -19,9 +19,9 @@
     .card {
       padding: 20px 24px;
       border-radius: 16px;
-      background: rgba(255, 255, 255, 0.85);
+      background: rgba(255, 255, 255, 0.9);
       border: 1px solid #90b9e0;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
       max-width: 420px;
       width: 90vw;
     }
@@ -30,12 +30,12 @@
       font-size: 1.1rem;
       letter-spacing: 0.12em;
       text-transform: uppercase;
-      color: #9ca3af;
+      color: #36577f;
     }
     .subtitle {
       margin-bottom: 20px;
       font-size: 0.9rem;
-      color: #6b7280;
+      color: #526b86;
     }
     .value-row {
       display: flex;
@@ -46,24 +46,24 @@
     #co2-value {
       font-size: 3rem;
       font-weight: 600;
-      color: #22d3ee;
+      color: #0f9acb;
     }
     .unit {
       font-size: 1rem;
-      color: #9ca3af;
+      color: #526b86;
     }
     #date-label {
       font-size: 0.85rem;
-      color: #9ca3af;
+      color: #526b86;
       margin-bottom: 8px;
     }
     #status {
       font-size: 0.8rem;
-      color: #9ca3af;
+      color: #526b86;
       margin-top: 8px;
     }
     .error {
-      color: #fca5a5;
+      color: #b91c1c;
     }
   </style>
 </head>
@@ -80,69 +80,41 @@
     <div id="date-label">Latest date: —</div>
     <div id="status">Fetching latest value…</div>
   </div>
+
   <script>
-  const NOAA_URL =
-    "https://gml.noaa.gov/webdata/ccgg/trends/co2/co2_daily_mlo.txt";
+    const valueEl = document.getElementById("co2-value");
+    const dateLabelEl = document.getElementById("date-label");
+    const statusEl = document.getElementById("status");
 
-  // ThingProxy (alternative free CORS proxy)
-  const DATA_URL =
-    "https://thingproxy.freeboard.io/fetch/" + encodeURIComponent(NOAA_URL);
+    async function fetchCO2() {
+      try {
+        statusEl.textContent = "Fetching latest value…";
 
-  const valueEl = document.getElementById("co2-value");
-  const dateLabelEl = document.getElementById("date-label");
-  const statusEl = document.getElementById("status");
+        const resp = await fetch("/.netlify/functions/co2", {
+          cache: "no-cache",
+        });
 
-  async function fetchCO2() {
-    try {
-      statusEl.textContent = "Fetching latest value…";
+        if (!resp.ok) {
+          throw new Error("HTTP " + resp.status);
+        }
 
-      const resp = await fetch(DATA_URL, { cache: "no-cache" });
-      if (!resp.ok) {
-        throw new Error("HTTP " + resp.status);
+        const data = await resp.json();
+        // data: { co2, year, month, day }
+
+        valueEl.textContent = data.co2.toFixed(2);
+        const mm = String(data.month).padStart(2, "0");
+        const dd = String(data.day).padStart(2, "0");
+        dateLabelEl.textContent = `Latest date: ${data.year}-${mm}-${dd}`;
+
+        statusEl.textContent = `Last updated: ${new Date().toLocaleString()}`;
+      } catch (err) {
+        console.error(err);
+        statusEl.innerHTML =
+          '<span class="error">Error fetching CO₂ data. Please try again later.</span>';
       }
-
-      const text = await resp.text();
-      const lines = text.trim().split("\n");
-
-      let co2 = null;
-      let year, month, day;
-
-      for (let i = lines.length - 1; i >= 0; i--) {
-        const line = lines[i].trim();
-        if (!line || line.startsWith("#")) continue;
-
-        const parts = line.split(/\s+/);
-        if (parts.length < 5) continue;
-
-        year = parts[0];
-        month = parts[1];
-        day = parts[2];
-        const value = parseFloat(parts[4]);
-
-        if (!Number.isFinite(value) || value < 200 || value > 700) continue;
-        co2 = value;
-        break;
-      }
-
-      if (co2 === null) {
-        throw new Error("Could not parse CO₂ value");
-      }
-
-      const mm = String(month).padStart(2, "0");
-      const dd = String(day).padStart(2, "0");
-
-      valueEl.textContent = co2.toFixed(2);
-      dateLabelEl.textContent = `Latest date: ${year}-${mm}-${dd}`;
-      statusEl.textContent = `Last updated (via proxy): ${new Date().toLocaleString()}`;
-
-    } catch (err) {
-      console.error(err);
-      statusEl.innerHTML =
-        '<span class="error">Error fetching CO₂ data. Please try again later.</span>';
     }
-  }
 
-  fetchCO2();
-</script>  
+    fetchCO2();
+  </script>
 </body>
 </html>
