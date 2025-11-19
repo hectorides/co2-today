@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Background -->
+  <rect x="0" y="0" width="512" height="512" rx="96" ry="96" fill="#c7e6ff"/>
+  
+  <!-- Volcano / mountain base -->
+  <path d="M96 384 L256 192 L416 384 Z" fill="#2b567f"/>
+  
+  <!-- Dome base platform -->
+  <rect x="196" y="248" width="120" height="40" rx="8" fill="#1c3a57"/>
+
+  <!-- Dome -->
+  <circle cx="256" cy="228" r="52" fill="#ffffff"/>
+
+  <!-- Dome hatch line -->
+  <path d="M256 176 A52 52 0 0 1 308 228" stroke="#cbd5f5" stroke-width="6" fill="none"/>
+
+  <!-- CO₂ text -->
+  <text x="256" y="135" text-anchor="middle"
+        font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+        font-size="64" fill="#1c3a57">CO₂</text>
+</svg>
